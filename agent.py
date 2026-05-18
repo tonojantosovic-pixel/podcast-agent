@@ -36,8 +36,8 @@ FILE_PROCESSING_BASE_WAIT_SEC = 600
 FILE_PROCESSING_PER_MB_SEC = 15
 AUDIO_MIME_TYPE = "audio/mpeg"
 TEMPERATURE = 0.2
-FREQUENCY_PENALTY = 0.4
-PRESENCE_PENALTY = 0.2
+#FREQUENCY_PENALTY = 0.4
+#PRESENCE_PENALTY = 0.2
 
 StatusCallback = Callable[[str], None]
 
@@ -316,8 +316,6 @@ def gemini_audio_file(
 def generation_config() -> types.GenerateContentConfig:
     return types.GenerateContentConfig(
         temperature=TEMPERATURE,
-        frequency_penalty=FREQUENCY_PENALTY,
-        presence_penalty=PRESENCE_PENALTY,
         system_instruction=SYSTEM_INSTRUCTION,
         thinking_config=types.ThinkingConfig(thinking_budget=0),
     )
