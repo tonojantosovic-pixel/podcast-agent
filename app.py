@@ -56,19 +56,25 @@ if st.button("Spustiť prepis", type="primary", use_container_width=True):
 sections = st.session_state.get("sections")
 if sections:
     st.divider()
+    
+    # Bezpečné vytiahnutie sekcií s náhradným riešením, ak kľúč chýba
+    jazyk = sections.get("JAZYK", "Neznámy")
+    zhrnutie = sections.get("ZHRNUTIE", "Zhrnutie nebolo vygenerované alebo sa nezmestilo do limitu.")
+    prepis = sections.get("PREPIS", sections.get("RAW_RESPONSE", "Prepis chýba."))
+
     st.subheader("Zhrnutie")
-    st.markdown(f"**Jazyk:** {sections['JAZYK']}")
-    st.markdown(sections["ZHRNUTIE"])
+    st.markdown(f"**Jazyk:** {jazyk}")
+    st.markdown(zhrnutie)
 
     st.subheader("Plný prepis")
     st.text_area(
         "Prepis",
-        value=sections["PREPIS"],
+        value=prepis,
         height=480,
         label_visibility="collapsed",
     )
 
-    summary_text = f"Jazyk: {sections['JAZYK']}\n\n{sections['ZHRNUTIE']}"
+    summary_text = f"Jazyk: {jazyk}\n\n{zhrnutie}"
     col1, col2 = st.columns(2)
     with col1:
         st.download_button(
@@ -81,7 +87,7 @@ if sections:
     with col2:
         st.download_button(
             "Stiahnuť prepis (.txt)",
-            data=sections["PREPIS"],
+            data=prepis,
             file_name="prepis.txt",
             mime="text/plain",
             use_container_width=True,
