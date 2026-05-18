@@ -36,8 +36,6 @@ FILE_PROCESSING_BASE_WAIT_SEC = 600
 FILE_PROCESSING_PER_MB_SEC = 15
 AUDIO_MIME_TYPE = "audio/mpeg"
 TEMPERATURE = 0.2
-#FREQUENCY_PENALTY = 0.4
-#PRESENCE_PENALTY = 0.2
 
 StatusCallback = Callable[[str], None]
 
@@ -46,7 +44,7 @@ SYSTEM_INSTRUCTION = """Si asistent na prepis podcastového audia. Striktne dodr
 - Nikdy neopakuj rovnaké frázy, vety, odseky ani časové značky.
 - Necykluj sa a nevypĺňaj výstup opakovaným alebo „halucinovaným“ textom.
 - Ak reč v audiu skončí alebo nastane dlhšia odmlčka/ticho, okamžite ukonči prepis.
-  Po skončení audia už nič nepíš, neopakuj posledné vety a nevymýšľaj pokračovanie.
+  Po skončení audia už nič nepíš, neopakuj posledné vety and nevymýšľaj pokračovanie.
 - Piš presne, vecne a bez zbytočnej kreativity.
 - Obsah prelož do slovenčiny (okrem názvu jazyka v sekcii [JAZYK]).
 """
@@ -400,10 +398,12 @@ def transcribe(
             stream=True,
             status=status,
         )
+        
         return {
             "JAZYK": extract_section(meta_text, "JAZYK"),
             "ZHRNUTIE": extract_section(meta_text, "ZHRNUTIE"),
-            "PREPIS": extract_section(transcript_text, "PREPIS"),
+            "PREPIS": extract_section(transcript_text, "PREPIS") or transcript_text,
+            "RAW_RESPONSE": transcript_text
         }
 
     raw = generate_text(
@@ -421,7 +421,7 @@ def extract_section(text: str, marker: str) -> str:
     pattern = re.compile(rf"\[{marker}\]\s*\n?", re.IGNORECASE)
     match = pattern.search(text)
     if not match:
-        raise ValueError(f"Chýba sekcia [{marker}] v odpovedi modelu.")
+        return ""
     start = match.end()
     next_marker = re.compile(r"\[(JAZYK|ZHRNUTIE|PREPIS)\]", re.IGNORECASE)
     next_match = next_marker.search(text, start)
@@ -435,21 +435,23 @@ def parse_sections(text: str) -> dict[str, str]:
         re.IGNORECASE,
     )
     matches = list(pattern.finditer(text))
+    
+    sections: dict[str, str] = {"RAW_RESPONSE": text}
     if not matches:
-        raise ValueError(
-            "Odpoveď neobsahuje očakávané značky [JAZYK], [ZHRNUTIE], [PREPIS]."
-        )
+        sections["JAZYK"] = "Neznámy"
+        sections["ZHRNUTIE"] = "Nepodarilo sa oddeliť sekcie."
+        sections["PREPIS"] = text
+        return sections
 
-    sections: dict[str, str] = {}
     for i, match in enumerate(matches):
         key = match.group(1).upper()
         start = match.end()
         end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
         sections[key] = text[start:end].strip()
 
-    missing = [m for m in SECTION_MARKERS if m not in sections]
-    if missing:
-        raise ValueError(f"Chýbajúce sekcie v odpovedi: {', '.join(missing)}")
+    for m in SECTION_MARKERS:
+        if m not in sections:
+            sections[m] = text if m == "PREPIS" else "Chýba"
 
     return sections
 
@@ -461,8 +463,8 @@ def save_outputs(sections: dict[str, str], base_name: str) -> tuple[Path, Path]:
     summary_path = OUTPUT_DIR / f"{stem}_zhrnutie.txt"
     transcript_path = OUTPUT_DIR / f"{stem}_prepis.txt"
 
-    summary_body = f"Jazyk: {sections['JAZYK']}\n\n{sections['ZHRNUTIE']}\n"
-    transcript_body = sections["PREPIS"] + "\n"
+    summary_body = f"Jazyk: {sections.get('JAZYK', 'Neznámy')}\n\n{sections.get('ZHRNUTIE', '')}\n"
+    transcript_body = sections.get("PREPIS", sections.get("RAW_RESPONSE", "")) + "\n"
 
     summary_path.write_text(summary_body, encoding="utf-8")
     transcript_path.write_text(transcript_body, encoding="utf-8")
@@ -528,7 +530,7 @@ def main() -> None:
         sys.exit(1)
 
     print("\nHotovo.")
-    print(f"  Jazyk:   {sections['JAZYK']}")
+    print(f"  Jazyk:   {sections.get('JAZYK', 'Neznámy')}")
     print(f"  Výstupy: {OUTPUT_DIR}/")
 
 
