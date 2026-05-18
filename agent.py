@@ -74,18 +74,19 @@ Vráť výstup VÝLUČNE v tomto formáte (v slovenčine):
 <stručné zhrnutie obsahu v slovenčine, 5–15 viet>
 """
 
-PROMPT_TRANSCRIPT = """Vytvor úplný prepis priloženého podcastového audia.
+PROMPT_TRANSCRIPT = """Vytvor úplný a detailný prepis priloženého podcastového audia od úplného začiatku (čas 00:00:00) až do konca.
 
 Pravidlá:
-- prepis v slovenčine (prelož, ak je audio v inom jazyku)
-- na začiatok každého odseku daj časovú značku [HH:MM:SS]
-- nevynechaj žiadnu časť audia, kde je reč
-- po skončení reči alebo pri tichu prepis okamžite ukonči; neopakuj text
+- Prepis píš výhradne v slovenčine (obsah prelož, ak sa hovorí cudzím jazykom).
+- Na začiatok KAŽDÉHO nového odseku vlož reálnu časovú značku vo formáte [HH:MM:SS], kedy daná myšlienka v audiu skutočne zaznie.
+- Časové značky musia rásť a posúvať sa vpred (napr. [00:00:05], [00:01:20], [00:02:45]...). Je prísne zakázané opakovať rovnaký čas na viacerých riadkoch.
+- Nevynechaj žiadnu konverzáciu.
+- Ak v audiu nastane ticho alebo reč skončí, prepis okamžite ukonči.
 
 Vráť výstup VÝLUČNE v tomto formáte:
 
 [PREPIS]
-<úplný prepis>
+<úplný prepis s postupujúcim časom>
 """
 
 SECTION_MARKERS = ("JAZYK", "ZHRNUTIE", "PREPIS")
