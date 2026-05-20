@@ -16,29 +16,32 @@ st.set_page_config(
 st.title("🎙️ Podcast Agent")
 st.caption(f"Prepis podcastov do slovenčiny · {MODEL} · Gemini File API")
 
-# Inicializácia kľúča v session_state, ak neexistuje
-if "url_value" not in st.session_state:
-    st.session_state["url_value"] = ""
+# Inicializácia hodnôt v stave, ak neexistujú
+if "url_input" not in st.session_state:
+    st.session_state["url_input"] = ""
+if "sections" not in st.session_state:
+    st.session_state["sections"] = None
+
+# Funkcia, ktorú zavolá samotné tlačidlo pred prekreslením stránky
+def clear_url():
+    st.session_state["url_input"] = ""
+    st.session_state["sections"] = None
 
 # Vytvoríme stĺpce pre vstupné pole a tlačidlo
 col_input, col_reset = st.columns([6, 1])
 
 with col_input:
-    # Použijeme value naviazanú na stav, nie priamy parameter key
+    # Naviažeme pole na kľúč 'url_input' v session_state
     url = st.text_input(
         "URL adresa podcastu (mp3)",
         placeholder="https://example.com/episode.mp3",
-        value=st.session_state["url_value"]
+        key="url_input"
     )
-    # Hneď uložíme aktuálne napísanú hodnotu, aby sme ju nestratili pri reštarte
-    st.session_state["url_value"] = url
 
 with col_reset:
     st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
-    if st.button("Nový súbor", use_container_width=True):
-        # Tu bezpečne zmeníme hodnotu, pretože text_input ju nevlastní cez parameter key
-        st.session_state["url_value"] = ""
-        st.session_state["sections"] = None
+    # Parameter on_click povie Streamlitu, aby najprv vymazal stav a až potom prekreslil widget
+    if st.button("Nový súbor", on_click=clear_url, use_container_width=True):
         st.rerun()
 
 reuse = st.checkbox(
