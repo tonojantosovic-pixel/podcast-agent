@@ -16,28 +16,29 @@ st.set_page_config(
 st.title("🎙️ Podcast Agent")
 st.caption(f"Prepis podcastov do slovenčiny · {MODEL} · Gemini File API")
 
-# Funkcia na vyčistenie URL a resetovanie výsledkov
-def reset_form():
-    if "url_input" in st.session_state:
-        st.session_state["url_input"] = ""
-    if "sections" in st.session_state:
-        st.session_state["sections"] = None
+# Inicializácia kľúča v session_state, ak neexistuje
+if "url_value" not in st.session_state:
+    st.session_state["url_value"] = ""
 
-# Vytvoríme dva stĺpce pre vstupné pole a tlačidlo reset
+# Vytvoríme stĺpce pre vstupné pole a tlačidlo
 col_input, col_reset = st.columns([6, 1])
 
 with col_input:
+    # Použijeme value naviazanú na stav, nie priamy parameter key
     url = st.text_input(
         "URL adresa podcastu (mp3)",
         placeholder="https://example.com/episode.mp3",
-        key="url_input",  # Pridaný kľúč pre ovládanie cez session_state
+        value=st.session_state["url_value"]
     )
+    # Hneď uložíme aktuálne napísanú hodnotu, aby sme ju nestratili pri reštarte
+    st.session_state["url_value"] = url
 
 with col_reset:
-    # Tlačidlo umiestnené vedľa textového poľa, ktoré zavolá čistiacu funkciu
-    st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True) # Zarovnanie do roviny s poľom
+    st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
     if st.button("Nový súbor", use_container_width=True):
-        reset_form()
+        # Tu bezpečne zmeníme hodnotu, pretože text_input ju nevlastní cez parameter key
+        st.session_state["url_value"] = ""
+        st.session_state["sections"] = None
         st.rerun()
 
 reuse = st.checkbox(
@@ -76,7 +77,6 @@ sections = st.session_state.get("sections")
 if sections:
     st.divider()
     
-    # Bezpečné vytiahnutie sekcií s náhradným riešením, ak kľúč chýba
     jazyk = sections.get("JAZYK", "Neznámy")
     zhrnutie = sections.get("ZHRNUTIE", "Zhrnutie nebolo vygenerované alebo sa nezmestilo do limitu.")
     prepis = sections.get("PREPIS", sections.get("RAW_RESPONSE", "Prepis chýba."))
