@@ -16,10 +16,29 @@ st.set_page_config(
 st.title("🎙️ Podcast Agent")
 st.caption(f"Prepis podcastov do slovenčiny · {MODEL} · Gemini File API")
 
-url = st.text_input(
-    "URL adresa podcastu (mp3)",
-    placeholder="https://example.com/episode.mp3",
-)
+# Funkcia na vyčistenie URL a resetovanie výsledkov
+def reset_form():
+    if "url_input" in st.session_state:
+        st.session_state["url_input"] = ""
+    if "sections" in st.session_state:
+        st.session_state["sections"] = None
+
+# Vytvoríme dva stĺpce pre vstupné pole a tlačidlo reset
+col_input, col_reset = st.columns([6, 1])
+
+with col_input:
+    url = st.text_input(
+        "URL adresa podcastu (mp3)",
+        placeholder="https://example.com/episode.mp3",
+        key="url_input",  # Pridaný kľúč pre ovládanie cez session_state
+    )
+
+with col_reset:
+    # Tlačidlo umiestnené vedľa textového poľa, ktoré zavolá čistiacu funkciu
+    st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True) # Zarovnanie do roviny s poľom
+    if st.button("Nový súbor", use_container_width=True):
+        reset_form()
+        st.rerun()
 
 reuse = st.checkbox(
     "Použiť už stiahnutý súbor (ak existuje v downloads/)",
