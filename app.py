@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from agent import MODEL, OUTPUT_DIR, process_podcast
+from agent import OUTPUT_DIR, process_podcast
 
 st.set_page_config(
     page_title="Podcast Agent",
@@ -13,25 +13,41 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-st.title("🎙️ Podcast Agent")
-st.caption(f"Prepis podcastov do slovenčiny · {MODEL} · Gemini File API")
-
 # Inicializácia hodnôt v stave, ak neexistujú
 if "url_input" not in st.session_state:
     st.session_state["url_input"] = ""
 if "sections" not in st.session_state:
     st.session_state["sections"] = None
+if "selected_model" not in st.session_state:
+    st.session_state["selected_model"] = "gemini-2.5-flash"
 
-# Funkcia, ktorú zavolá samotné tlačidlo pred prekreslením stránky
+st.title("🎙️ Podcast Agent")
+# Podnadpis dynamicky ukazuje, ktorý model je práve aktívny
+st.caption(f"Prepis podcastov do slovenčiny · Aktívny model: **{st.session_state['selected_model']}** · Gemini File API")
+
+# Funkcia pre vyčistenie formulára
 def clear_url():
     st.session_state["url_input"] = ""
     st.session_state["sections"] = None
 
-# Vytvoríme stĺpce pre vstupné pole a tlačidlo
+# Prepínač modelov vo forme dvoch estetických tlačidiel pod nadpisom
+st.write("### Prepni model Flash")
+col_m1, col_m2, _ = st.columns([1.5, 1.5, 4])
+with col_m1:
+    if st.button("Použiť Gemini 2.5 Flash", type="secondary" if st.session_state["selected_model"] == "gemini-3.5-flash" else "primary", use_container_width=True):
+        st.session_state["selected_model"] = "gemini-2.5-flash"
+        st.rerun()
+with col_m2:
+    if st.button("Použiť Gemini 3.5 Flash", type="secondary" if st.session_state["selected_model"] == "gemini-2.5-flash" else "primary", use_container_width=True):
+        st.session_state["selected_model"] = "gemini-3.5-flash"
+        st.rerun()
+
+st.divider()
+
+# Vytvoríme stĺpce pre vstupné pole a tlačidlo reset
 col_input, col_reset = st.columns([6, 1])
 
 with col_input:
-    # Naviažeme pole na kľúč 'url_input' v session_state
     url = st.text_input(
         "URL adresa podcastu (mp3)",
         placeholder="https://example.com/episode.mp3",
@@ -40,7 +56,6 @@ with col_input:
 
 with col_reset:
     st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
-    # Parameter on_click povie Streamlitu, aby najprv vymazal stav a až potom prekreslil widget
     if st.button("Nový súbor", on_click=clear_url, use_container_width=True):
         st.rerun()
 
@@ -61,9 +76,10 @@ if st.button("Spustiť prepis", type="primary", use_container_width=True):
             status_box.info("\n\n".join(log_lines[-6:]))
 
         try:
-            with st.spinner("Spracovávam podcast, môže to trvať niekoľko minút…"):
+            with st.spinner(f"Spracovávam podcast cez {st.session_state['selected_model']}, môže to trvať niekoľko minút…"):
                 sections = process_podcast(
                     url.strip(),
+                    model_name=st.session_state["selected_model"],
                     reuse_download=reuse,
                     status=on_status,
                 )
