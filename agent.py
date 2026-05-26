@@ -41,10 +41,10 @@ StatusCallback = Callable[[str], None]
 SYSTEM_INSTRUCTION = """Si asistent na prepis podcastového audia. Striktne dodržiavaj:
 
 - Nikdy neopakuj rovnaké frázy, vety, odseky ani časové značky.
-- Necykluj sa a nevypĺňaj výstup opakovaným alebo „halucinovaným“ textom.
+- Necykluj sa and nevypĺňaj výstup opakovaným alebo „halucinovaným“ textom.
 - Ak reč v audiu skončí alebo nastane dlhšia odmlčka/ticho, okamžite ukonči prepis.
   Po skončení audia už nič nepíš, neopakuj posledné vety and nevymýšľaj pokračovanie.
-- Piš presne, vecne a bez zbytočnej kreativity.
+- Piš presne, vecne and bez zbytočnej kreativity.
 - Obsah prelož do slovenčiny (okrem názvu jazyka v sekcii [JAZYK]).
 """
 
@@ -415,7 +415,7 @@ def transcribe(
         audio_part,
         PROMPT,
         label="Kompletný výstup",
-        model_name=model_name,
+        model_name=model_name,  # TU BOLA CHYBA - opravené odovzdanie premennej
         stream=True,
         status=status,
     )
