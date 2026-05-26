@@ -530,7 +530,6 @@ def main() -> None:
 
     try:
         url = resolve_url(args.url, args.url_file)
-        # Príkazový riadok predvolene beží na 2.5
         sections = process_podcast(url, model_name="gemini-2.5-flash", reuse_download=args.reuse_download)
     except Exception as exc:
         print(f"Chyba: {exc}", file=sys.stderr)
