@@ -24,7 +24,6 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-MODEL = "gemini-2.5-flash"
 DOWNLOAD_DIR = Path("downloads")
 OUTPUT_DIR = Path("vystup")
 REQUEST_TIMEOUT_MS = 3_600_000
@@ -326,6 +325,7 @@ def generate_text(
     prompt: str,
     *,
     label: str,
+    model_name: str,
     stream: bool = False,
     status: StatusCallback | None = None,
 ) -> str:
@@ -339,7 +339,7 @@ def generate_text(
             if stream:
                 parts: list[str] = []
                 for chunk in client.models.generate_content_stream(
-                    model=MODEL,
+                    model=model_name,
                     contents=contents,
                     config=config,
                 ):
@@ -348,7 +348,7 @@ def generate_text(
                 text = "".join(parts)
             else:
                 response = client.models.generate_content(
-                    model=MODEL,
+                    model=model_name,
                     contents=contents,
                     config=config,
                 )
@@ -377,10 +377,11 @@ def transcribe(
     audio_part: types.Part,
     audio_path: Path,
     *,
+    model_name: str,
     status: StatusCallback | None = None,
 ) -> dict[str, str]:
     size_mb = audio_path.stat().st_size / (1024 * 1024)
-    log(f"Generujem prepis ({MODEL}, {size_mb:.1f} MB)…", status)
+    log(f"Generujem prepis ({model_name}, {size_mb:.1f} MB)…", status)
 
     if size_mb >= LARGE_FILE_MB:
         log("Dlhá epizóda – spracovanie v dvoch krokoch.", status)
@@ -389,6 +390,7 @@ def transcribe(
             audio_part,
             PROMPT_META,
             label="Jazyk a zhrnutie",
+            model_name=model_name,
             status=status,
         )
         transcript_text = generate_text(
@@ -396,6 +398,7 @@ def transcribe(
             audio_part,
             PROMPT_TRANSCRIPT,
             label="Plný prepis",
+            model_name=model_name,
             stream=True,
             status=status,
         )
@@ -412,6 +415,7 @@ def transcribe(
         audio_part,
         PROMPT,
         label="Kompletný výstup",
+        model_name=model_name,
         stream=True,
         status=status,
     )
@@ -476,6 +480,7 @@ def save_outputs(sections: dict[str, str], base_name: str) -> tuple[Path, Path]:
 def process_podcast(
     url: str,
     *,
+    model_name: str = "gemini-2.5-flash",
     reuse_download: bool = False,
     status: StatusCallback | None = None,
 ) -> dict[str, str]:
@@ -491,7 +496,7 @@ def process_podcast(
     )
 
     with gemini_audio_file(client, audio_path, status=status) as audio_part:
-        sections = transcribe(client, audio_part, audio_path, status=status)
+        sections = transcribe(client, audio_part, audio_path, model_name=model_name, status=status)
 
     save_outputs(sections, audio_path.name)
     return sections
@@ -525,7 +530,8 @@ def main() -> None:
 
     try:
         url = resolve_url(args.url, args.url_file)
-        sections = process_podcast(url, reuse_download=args.reuse_download)
+        # Príkazový riadok predvolene beží na 2.5
+        sections = process_podcast(url, model_name="gemini-2.5-flash", reuse_download=args.reuse_download)
     except Exception as exc:
         print(f"Chyba: {exc}", file=sys.stderr)
         sys.exit(1)
